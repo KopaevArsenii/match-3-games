@@ -18,8 +18,8 @@ export default {
     handleCellClick: Function,
   },
   methods: {
-    handleClick(e) {
-      this.handleCellClick(this.rowIndex, this.colIndex, e);
+    handleClick() {
+      this.handleCellClick(this.rowIndex, this.colIndex);
     }
   }
 };
