@@ -8,7 +8,7 @@
         :key="index"
         :rowIndex="Math.floor(index / boardSize)"
         :colIndex="index % boardSize"
-        :cell="cell"
+        :color="cell.color"
         :isSelected="isSelected(index)"
         :handleCellClick="handleCellClick"
     />
@@ -40,32 +40,34 @@ export default {
     },
     handleCellClick(rowIndex, colIndex) {
       const index = rowIndex * this.boardSize + colIndex;
-      if (this.selectedCell !== null) {
-        const selectedIndex = this.selectedCell;
-        const selectedRow = Math.floor(selectedIndex / this.boardSize);
-        const selectedCol = selectedIndex % this.boardSize;
 
-        if (
-            (Math.abs(selectedRow - rowIndex) === 1 && selectedCol === colIndex) ||
-            (Math.abs(selectedCol - colIndex) === 1 && selectedRow === rowIndex)
-        ) {
-          const backupBoard = [...this.board];
-          [this.board[selectedIndex].color, this.board[index].color] = [
-            this.board[index].color,
-            this.board[selectedIndex].color,
-          ];
-
-          if (this.checkAndClearLines()) {
-            this.dropBalls();
-            this.generateNewBalls();
-          } else {
-            this.board = backupBoard;
-          }
-        }
-        this.selectedCell = null;
-      } else {
+      if (this.selectedCell === null) {
         this.selectedCell = index;
+        return;
       }
+
+      const selectedIndex = this.selectedCell;
+      const selectedRow = Math.floor(selectedIndex / this.boardSize);
+      const selectedCol = selectedIndex % this.boardSize;
+
+      if (
+          (Math.abs(selectedRow - rowIndex) === 1 && selectedCol === colIndex) ||
+          (Math.abs(selectedCol - colIndex) === 1 && selectedRow === rowIndex)
+      ) {
+        const backupBoard = [...this.board];
+        [this.board[selectedIndex].color, this.board[index].color] = [
+          this.board[index].color,
+          this.board[selectedIndex].color,
+        ];
+
+        if (this.checkAndClearLines()) {
+          this.dropBalls();
+          this.generateNewBalls();
+        } else {
+          this.board = backupBoard;
+        }
+      }
+      this.selectedCell = null;
     },
     clearSelection() {
       this.selectedCell = null;

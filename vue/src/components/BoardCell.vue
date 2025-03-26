@@ -2,18 +2,19 @@
   <div
       class="game-board__cell"
       :style="{
-      backgroundColor: cell.color,
+      backgroundColor: this.color,
       border: isSelected ? '2px solid #000' : 'none'
     }"
       @click="handleClick"
-  ></div>
+  >
+  </div>
 </template>
 <script>
 export default {
   props: {
     rowIndex: Number,
     colIndex: Number,
-    cell: Object,
+    color: String,
     isSelected: Boolean,
     handleCellClick: Function,
   },
