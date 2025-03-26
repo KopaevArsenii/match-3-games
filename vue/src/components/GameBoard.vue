@@ -101,19 +101,18 @@ export default {
       }
       return hasLineCleared;
     },
-    dropBalls() {
-      this.board.forEach((column, colIndex) => {
+    dropBalls() { // логика игры не позволяет писать циклы forEach здесь либо мы не разобрались как
+      for (let col = 0; col < this.boardSize; col++) {
         let emptySpaces = 0;
-        column.reverse().forEach((cell, rowIndex) => {
-          const row = this.board[this.boardSize - 1 - rowIndex];
-          if (row[colIndex].color === '') {
+        for (let row = this.boardSize - 1; row >= 0; row--) {
+          if (this.board[row][col].color === "") {
             emptySpaces++;
           } else if (emptySpaces > 0) {
-            this.board[this.boardSize - 1 - rowIndex + emptySpaces][colIndex].color = row[colIndex].color;
-            row[colIndex].color = '';
+            this.board[row + emptySpaces][col].color = this.board[row][col].color;
+            this.board[row][col].color = "";
           }
-        });
-      });
+        }
+      }
     },
     generateNewBalls() {
       const colors = [
