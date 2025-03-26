@@ -1,17 +1,22 @@
 <template>
-  <div class="game-board" @click.self="clearSelection">
-    <BoardRow
-        v-for="(row, rowIndex) in board"
-        :key="rowIndex"
-        :row="row"
-        :rowIndex="rowIndex"
-        :isSelected="isSelected"
+  <div
+      class="game-board"
+      @click.self="clearSelection"
+  >
+    <BoardCell
+        v-for="(cell, index) in board"
+        :key="index"
+        :rowIndex="Math.floor(index / boardSize)"
+        :colIndex="index % boardSize"
+        :cell="cell"
+        :isSelected="isSelected(index)"
         :handleCellClick="handleCellClick"
     />
   </div>
 </template>
+
 <script>
-import BoardRow from './BoardRow.vue';
+import BoardCell from "./BoardCell.vue";
 
 const COLORS = [
   "#FF0000", "#024217", "#0000FF", "#FFFF00",
@@ -19,9 +24,7 @@ const COLORS = [
 ];
 
 export default {
-  components: {
-    BoardRow
-  },
+  components: { BoardCell },
   data() {
     return {
       boardSize: 8,
@@ -31,23 +34,26 @@ export default {
   },
   methods: {
     generateBoard() {
-      this.board = Array.from({ length: this.boardSize }, () =>
-          Array.from({ length: this.boardSize }, () => ({
-            color: COLORS[Math.floor(Math.random() * COLORS.length)],
-          }))
-      );
+      this.board = Array.from({ length: this.boardSize ** 2 }, () => ({
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      }));
     },
     handleCellClick(rowIndex, colIndex) {
-      if (this.selectedCell) {
-        const [selectedRow, selectedCol] = this.selectedCell;
+      const index = rowIndex * this.boardSize + colIndex;
+      if (this.selectedCell !== null) {
+        const selectedIndex = this.selectedCell;
+        const selectedRow = Math.floor(selectedIndex / this.boardSize);
+        const selectedCol = selectedIndex % this.boardSize;
+
         if (
             (Math.abs(selectedRow - rowIndex) === 1 && selectedCol === colIndex) ||
             (Math.abs(selectedCol - colIndex) === 1 && selectedRow === rowIndex)
         ) {
-          const backupBoard = JSON.parse(JSON.stringify(this.board));
-          const temp = this.board[rowIndex][colIndex].color;
-          this.board[rowIndex][colIndex].color = this.board[selectedRow][selectedCol].color;
-          this.board[selectedRow][selectedCol].color = temp;
+          const backupBoard = [...this.board];
+          [this.board[selectedIndex].color, this.board[index].color] = [
+            this.board[index].color,
+            this.board[selectedIndex].color,
+          ];
 
           if (this.checkAndClearLines()) {
             this.dropBalls();
@@ -58,80 +64,76 @@ export default {
         }
         this.selectedCell = null;
       } else {
-        this.selectedCell = [rowIndex, colIndex];
+        this.selectedCell = index;
       }
     },
     clearSelection() {
       this.selectedCell = null;
     },
-    isSelected(rowIndex, colIndex) {
-      return this.selectedCell && this.selectedCell[0] === rowIndex && this.selectedCell[1] === colIndex;
+    isSelected(index) {
+      return this.selectedCell === index;
     },
     checkAndClearLines() {
       let hasLineCleared = false;
       let updatedBoard = [...this.board];
-      this.board.forEach((row, rowIndex) => {
-        row.forEach((_, colIndex) => {
-          if (colIndex < this.boardSize - 2) {
-            const color = row[colIndex].color;
-            if (color === row[colIndex + 1].color && color === row[colIndex + 2].color) {
-              updatedBoard[rowIndex][colIndex].color = '';
-              updatedBoard[rowIndex][colIndex + 1].color = '';
-              updatedBoard[rowIndex][colIndex + 2].color = '';
-              hasLineCleared = true;
-            }
-          }
-        });
-      });
-      this.board.forEach((row, rowIndex) => {
-        if (rowIndex < this.boardSize - 2) {
-          row.forEach((_, colIndex) => {
-            const color = this.board[rowIndex][colIndex].color;
-            if (
-                color === this.board[rowIndex + 1][colIndex].color &&
-                color === this.board[rowIndex + 2][colIndex].color
-            ) {
-              updatedBoard[rowIndex][colIndex].color = '';
-              updatedBoard[rowIndex + 1][colIndex].color = '';
-              updatedBoard[rowIndex + 2][colIndex].color = '';
-              hasLineCleared = true;
-            }
-          });
+
+      for (let i = 0; i < this.board.length; i++) {
+        const row = Math.floor(i / this.boardSize);
+        const col = i % this.boardSize;
+        const color = this.board[i].color;
+
+        if (col < this.boardSize - 2 &&
+            color === this.board[i + 1]?.color &&
+            color === this.board[i + 2]?.color) {
+          updatedBoard[i].color = "";
+          updatedBoard[i + 1].color = "";
+          updatedBoard[i + 2].color = "";
+          hasLineCleared = true;
         }
-      });
+
+        if (row < this.boardSize - 2 &&
+            color === this.board[i + this.boardSize]?.color &&
+            color === this.board[i + this.boardSize * 2]?.color) {
+          updatedBoard[i].color = "";
+          updatedBoard[i + this.boardSize].color = "";
+          updatedBoard[i + this.boardSize * 2].color = "";
+          hasLineCleared = true;
+        }
+      }
+
       if (hasLineCleared) {
         this.board = updatedBoard;
       }
       return hasLineCleared;
     },
-    dropBalls() { // логика игры не позволяет писать циклы forEach здесь либо мы не разобрались как
+    dropBalls() {
       for (let col = 0; col < this.boardSize; col++) {
         let emptySpaces = 0;
         for (let row = this.boardSize - 1; row >= 0; row--) {
-          if (this.board[row][col].color === "") {
+          let index = row * this.boardSize + col;
+          if (this.board[index].color === "") {
             emptySpaces++;
           } else if (emptySpaces > 0) {
-            this.board[row + emptySpaces][col].color = this.board[row][col].color;
-            this.board[row][col].color = "";
+            this.board[index + emptySpaces * this.boardSize].color = this.board[index].color;
+            this.board[index].color = "";
           }
         }
       }
     },
     generateNewBalls() {
-      this.board.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-          if (cell.color === '') {
-            this.board[rowIndex][colIndex].color = COLORS[Math.floor(Math.random() * COLORS.length)];
-          }
-        });
+      this.board.forEach((cell) => {
+        if (cell.color === "") {
+          cell.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        }
       });
-    }
+    },
   },
   created() {
     this.generateBoard();
-  }
+  },
 };
 </script>
+
 <style lang="less" scoped>
 @import '../styles/_game-board.less';
 </style>
