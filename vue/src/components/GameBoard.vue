@@ -33,11 +33,19 @@ export default {
     };
   },
   methods: {
+    // it's okay
     generateBoard() {
       this.board = Array.from({ length: this.boardSize ** 2 }, () => ({
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
       }));
     },
+    clearSelection() {
+      this.selectedCell = null;
+    },
+    isSelected(index) {
+      return this.selectedCell === index;
+    },
+    // refactoring
     handleCellClick(rowIndex, colIndex) {
       const index = rowIndex * this.boardSize + colIndex;
 
@@ -68,12 +76,6 @@ export default {
         }
       }
       this.selectedCell = null;
-    },
-    clearSelection() {
-      this.selectedCell = null;
-    },
-    isSelected(index) {
-      return this.selectedCell === index;
     },
     checkAndClearLines() {
       let hasLineCleared = false;
