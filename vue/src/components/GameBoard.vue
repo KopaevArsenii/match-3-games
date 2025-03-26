@@ -12,6 +12,12 @@
 </template>
 <script>
 import BoardRow from './BoardRow.vue';
+
+const COLORS = [
+  "#FF0000", "#024217", "#0000FF", "#FFFF00",
+  "#FF00FF", "#00FFFF", "#a87532", "#28fa6e"
+];
+
 export default {
   components: {
     BoardRow
@@ -25,12 +31,9 @@ export default {
   },
   methods: {
     generateBoard() {
-      const colors = [
-        "#FF0000", "#024217", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#a87532", "#28fa6e"
-      ];
       this.board = Array.from({ length: this.boardSize }, () =>
           Array.from({ length: this.boardSize }, () => ({
-            color: colors[Math.floor(Math.random() * colors.length)],
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
           }))
       );
     },
@@ -115,13 +118,10 @@ export default {
       }
     },
     generateNewBalls() {
-      const colors = [
-        "#FF0000", "#024217", "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#a87532", "#28fa6e"
-      ];
       this.board.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
           if (cell.color === '') {
-            this.board[rowIndex][colIndex].color = colors[Math.floor(Math.random() * colors.length)];
+            this.board[rowIndex][colIndex].color = COLORS[Math.floor(Math.random() * COLORS.length)];
           }
         });
       });
