@@ -12,15 +12,14 @@
 <script>
 export default {
   props: {
-    rowIndex: Number,
-    colIndex: Number,
+    index: Number,
     color: String,
     isSelected: Boolean,
     handleCellClick: Function,
   },
   methods: {
     handleClick() {
-      this.handleCellClick(this.rowIndex, this.colIndex);
+      this.handleCellClick(this.index);
     }
   }
 };

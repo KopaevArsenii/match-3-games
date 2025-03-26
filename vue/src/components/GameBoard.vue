@@ -6,8 +6,7 @@
     <BoardCell
         v-for="(cell, index) in board"
         :key="index"
-        :rowIndex="Math.floor(index / boardSize)"
-        :colIndex="index % boardSize"
+        :index="index"
         :color="cell.color"
         :isSelected="isSelected(index)"
         :handleCellClick="handleCellClick"
@@ -39,11 +38,62 @@ export default {
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
       }));
     },
+    getIndex(row, col) {
+      return row * this.boardSize + col;
+    },
+    getRow(index) {
+      return Math.floor(index / this.boardSize);
+    },
+    getCol(index) {
+      return index % this.boardSize;
+    },
+    swapCells(board, index1, index2) {
+      [board[index1], board[index2]] = [board[index2], board[index1]];
+    },
     clearSelection() {
       this.selectedCell = null;
     },
     isSelected(index) {
       return this.selectedCell === index;
+    },
+    isValidMove(index1, index2) {
+      const row1 = Math.floor(index1 / this.boardSize);
+      const col1 = index1 % this.boardSize;
+      const row2 = Math.floor(index2 / this.boardSize);
+      const col2 = index2 % this.boardSize;
+
+      const areNeighbors = (Math.abs(row1 - row2) === 1 && col1 === col2) ||
+          (Math.abs(col1 - col2) === 1 && row1 === row2);
+
+      if (!areNeighbors) return false;
+
+      const newBoard = [...this.board];
+      [newBoard[index1], newBoard[index2]] = [newBoard[index2], newBoard[index1]];
+
+      return this.hasMatch(newBoard);
+    },
+    hasMatch(board) {
+      const size = this.boardSize;
+      this.board.forEach((_, index) => {
+        const row = this.getRow(index);
+        const col = this.getCol(index);
+
+        if (col <= size - 3 && board[index] === board[index + 1] && board[index] === board[index + 2]) {
+          return true;
+        }
+        if (row <= size - 3 && board[index] === board[index + size] && board[index] === board[index + 2 * size]) {
+          return true;
+        }
+      })
+      return false;
+    },
+    handleCellClick(clickedCellIndex) {
+      if (this.selectedCell === null) {
+        this.selectedCell = clickedCellIndex;
+        return;
+      }
+      this.swapCells(this.board, clickedCellIndex, this.selectedCell);
+      this.selectedCell = null;
     },
     dropBalls() {
       const size = this.boardSize;
@@ -60,44 +110,13 @@ export default {
           }
 
           if (emptySpaces > 0) {
-            const targetIndex = index + emptySpaces * size;
+            const targetIndex = this.getIndex(emptySpaces, index);
             [this.board[targetIndex].color, this.board[index].color] = [this.board[index].color, ""];
           }
         });
       });
     },
     // refactoring
-    handleCellClick(rowIndex, colIndex) {
-      const index = rowIndex * this.boardSize + colIndex;
-
-      if (this.selectedCell === null) {
-        this.selectedCell = index;
-        return;
-      }
-
-      const selectedIndex = this.selectedCell;
-      const selectedRow = Math.floor(selectedIndex / this.boardSize);
-      const selectedCol = selectedIndex % this.boardSize;
-
-      if (
-          (Math.abs(selectedRow - rowIndex) === 1 && selectedCol === colIndex) ||
-          (Math.abs(selectedCol - colIndex) === 1 && selectedRow === rowIndex)
-      ) {
-        const backupBoard = [...this.board];
-        [this.board[selectedIndex].color, this.board[index].color] = [
-          this.board[index].color,
-          this.board[selectedIndex].color,
-        ];
-
-        if (this.checkAndClearLines()) {
-          this.dropBalls();
-          this.generateNewBalls();
-        } else {
-          this.board = backupBoard;
-        }
-      }
-      this.selectedCell = null;
-    },
     checkAndClearLines() {
       let hasLineCleared = false;
       let updatedBoard = [...this.board];
