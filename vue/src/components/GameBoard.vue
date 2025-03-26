@@ -45,6 +45,27 @@ export default {
     isSelected(index) {
       return this.selectedCell === index;
     },
+    dropBalls() {
+      const size = this.boardSize;
+
+      Array.from({ length: size }).forEach((_, col) => {
+        let emptySpaces = 0;
+
+        [...Array(size)].forEach((_, row) => {
+          const index = (size - 1 - row) * size + col;
+
+          if (this.board[index].color === "") {
+            emptySpaces++;
+            return;
+          }
+
+          if (emptySpaces > 0) {
+            const targetIndex = index + emptySpaces * size;
+            [this.board[targetIndex].color, this.board[index].color] = [this.board[index].color, ""];
+          }
+        });
+      });
+    },
     // refactoring
     handleCellClick(rowIndex, colIndex) {
       const index = rowIndex * this.boardSize + colIndex;
@@ -109,20 +130,6 @@ export default {
         this.board = updatedBoard;
       }
       return hasLineCleared;
-    },
-    dropBalls() {
-      for (let col = 0; col < this.boardSize; col++) {
-        let emptySpaces = 0;
-        for (let row = this.boardSize - 1; row >= 0; row--) {
-          let index = row * this.boardSize + col;
-          if (this.board[index].color === "") {
-            emptySpaces++;
-          } else if (emptySpaces > 0) {
-            this.board[index + emptySpaces * this.boardSize].color = this.board[index].color;
-            this.board[index].color = "";
-          }
-        }
-      }
     },
     generateNewBalls() {
       this.board.forEach((cell) => {
