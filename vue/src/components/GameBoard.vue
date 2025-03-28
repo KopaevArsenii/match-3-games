@@ -1,7 +1,6 @@
 <template>
   <div
       class="game-board"
-      @click.self="clearSelection"
   >
     <BoardCell
         v-for="(cell, index) in board"
@@ -32,7 +31,6 @@ export default {
     };
   },
   methods: {
-    // it's okay
     generateBoard() {
       this.board = Array.from({ length: this.boardSize ** 2 }, () => ({
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
@@ -56,44 +54,53 @@ export default {
     isSelected(index) {
       return this.selectedCell === index;
     },
-    isValidMove(index1, index2) {
-      const row1 = Math.floor(index1 / this.boardSize);
-      const col1 = index1 % this.boardSize;
-      const row2 = Math.floor(index2 / this.boardSize);
-      const col2 = index2 % this.boardSize;
+    getNeighbors(index) {
+      const neighbors = [];
+      const row = this.getRow(index);
+      const col = this.getCol(index);
 
-      const areNeighbors = (Math.abs(row1 - row2) === 1 && col1 === col2) ||
-          (Math.abs(col1 - col2) === 1 && row1 === row2);
+      // top
+      if (row > 0) neighbors.push(this.getIndex(row - 1, col));
+      // bottom
+      if (row < this.boardSize - 1) neighbors.push(this.getIndex(row + 1, col));
+      // left
+      if (col > 0) neighbors.push(this.getIndex(row, col - 1));
+      // right
+      if (col < this.boardSize - 1) neighbors.push(this.getIndex(row, col + 1));
 
-      if (!areNeighbors) return false;
-
-      const newBoard = [...this.board];
-      [newBoard[index1], newBoard[index2]] = [newBoard[index2], newBoard[index1]];
-
-      return this.hasMatch(newBoard);
-    },
-    hasMatch(board) {
-      const size = this.boardSize;
-      this.board.forEach((_, index) => {
-        const row = this.getRow(index);
-        const col = this.getCol(index);
-
-        if (col <= size - 3 && board[index] === board[index + 1] && board[index] === board[index + 2]) {
-          return true;
-        }
-        if (row <= size - 3 && board[index] === board[index + size] && board[index] === board[index + 2 * size]) {
-          return true;
-        }
-      })
-      return false;
+      return neighbors;
     },
     handleCellClick(clickedCellIndex) {
       if (this.selectedCell === null) {
         this.selectedCell = clickedCellIndex;
         return;
       }
-      this.swapCells(this.board, clickedCellIndex, this.selectedCell);
-      this.selectedCell = null;
+      const neighbors = this.getNeighbors(this.selectedCell);
+      if (!neighbors.find((item) => item === clickedCellIndex)) return;
+
+      const afterSwapBoard = [...this.board];
+      this.swapCells(afterSwapBoard, clickedCellIndex, this.selectedCell);
+
+      if (this.hasMatches(afterSwapBoard)) {
+        this.board = afterSwapBoard;
+        this.processMatches();
+      }
+
+      this.clearSelection();
+    },
+    async processMatches() {
+      do {
+        if (!this.hasMatches(this.board)) break;
+
+        await this.$nextTick();
+        this.clearMatches();
+        await this.$nextTick();
+        this.dropBalls();
+        await this.$nextTick();
+        this.generateNewBalls();
+        await this.$nextTick();
+
+      } while (this.hasMatches(this.board));
     },
     dropBalls() {
       const size = this.boardSize;
@@ -116,39 +123,66 @@ export default {
         });
       });
     },
-    // refactoring
-    checkAndClearLines() {
-      let hasLineCleared = false;
-      let updatedBoard = [...this.board];
+    hasMatches(board) {
+      let matchFound = false;
 
-      for (let i = 0; i < this.board.length; i++) {
-        const row = Math.floor(i / this.boardSize);
-        const col = i % this.boardSize;
-        const color = this.board[i].color;
+      board.forEach((cell, i) => {
+        if (!cell.color) return;
 
-        if (col < this.boardSize - 2 &&
-            color === this.board[i + 1]?.color &&
-            color === this.board[i + 2]?.color) {
-          updatedBoard[i].color = "";
-          updatedBoard[i + 1].color = "";
-          updatedBoard[i + 2].color = "";
-          hasLineCleared = true;
+        const row = this.getRow(i);
+        const col = this.getCol(i);
+
+        // By horizontal
+        if (
+            col < this.boardSize - 2 &&
+            cell.color === board[i + 1]?.color &&
+            cell.color === board[i + 2]?.color
+        ) {
+          matchFound = true;
         }
 
-        if (row < this.boardSize - 2 &&
-            color === this.board[i + this.boardSize]?.color &&
-            color === this.board[i + this.boardSize * 2]?.color) {
-          updatedBoard[i].color = "";
-          updatedBoard[i + this.boardSize].color = "";
-          updatedBoard[i + this.boardSize * 2].color = "";
-          hasLineCleared = true;
+        // By vertical
+        if (
+            row < this.boardSize - 2 &&
+            cell.color === board[i + this.boardSize]?.color &&
+            cell.color === board[i + this.boardSize * 2]?.color
+        ) {
+          matchFound = true;
         }
-      }
+      });
 
-      if (hasLineCleared) {
-        this.board = updatedBoard;
-      }
-      return hasLineCleared;
+      return matchFound;
+    },
+    clearMatches() {
+      console.info('called')
+      this.board.forEach((cell, i) => {
+        if (!cell.color) return;
+
+        const row = this.getRow(i);
+        const col = this.getCol(i);
+
+        // By horizontal
+        if (
+            col < this.boardSize - 2 &&
+            cell.color === this.board[i + 1]?.color &&
+            cell.color === this.board[i + 2]?.color
+        ) {
+          this.board[i].color = "";
+          this.board[i + 1].color = "";
+          this.board[i + 2].color = "";
+        }
+
+        // By vertical
+        if (
+            row < this.boardSize - 2 &&
+            cell.color === this.board[i + this.boardSize]?.color &&
+            cell.color === this.board[i + this.boardSize * 2]?.color
+        ) {
+          this.board[i].color = "";
+          this.board[i + this.boardSize].color = "";
+          this.board[i + this.boardSize * 2].color = "";
+        }
+      });
     },
     generateNewBalls() {
       this.board.forEach((cell) => {
@@ -160,6 +194,7 @@ export default {
   },
   created() {
     this.generateBoard();
+    this.processMatches();
   },
 };
 </script>
